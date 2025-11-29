@@ -1,0 +1,145 @@
+.file-list {
+  margin: 0;
+  overflow-x: auto;
+}
+
+.file-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.file-list th, .file-list td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  word-wrap: break-word;
+  vertical-align: middle;
+  width: 15%;
+}
+
+.file-list .cell-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.file-list .cell-content button {
+  margin-left: 10px;
+}
+
+.file-list th {
+  background-color: #f2f2f2;
+}
+
+.file-list button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.file-list button:hover {
+  background-color: #45a049;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  width: 300px;
+}
+
+.modal h2 {
+  margin-bottom: 10px;
+}
+
+.modal input {
+  display: block;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.info-message {
+  position: absolute;
+  background-color: rgba(0, 128, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000; 
+  transition: opacity 0.5s ease;
+  opacity: 0;
+}
+
+.info-message.show {
+  opacity: 1;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.action-btn, .delete-btn, .link-btn {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.action-btn {
+    background: #007bff;
+    color: white;
+}
+
+.action-btn:hover {
+    background: #0056b3;
+}
+
+.delete-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.delete-btn:hover {
+    background: #c82333;
+}
+
+.link-btn {
+    background: #28a745;
+    color: white;
+}
+
+.link-btn:hover {
+    background: #218838;
+}
+
+.file-name {
+    color: #007bff;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-right: 8px;
+}
+
+.file-name:hover {
+    color: #0056b3;
+}
+
+.cell-content {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}

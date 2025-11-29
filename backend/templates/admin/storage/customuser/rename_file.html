@@ -1,0 +1,17 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 5px;">
+        <p><strong>Текущее имя:</strong> {{ file.original_name }}</p>
+        <br>
+        <label><strong>Новое имя файла:</strong></label><br>
+        <input type="text" name="new_name" value="{{ file.original_name }}" style="width: 100%; max-width: 400px; margin: 10px 0; padding: 8px;">
+    </div>
+    <button type="submit" class="button">💾 Сохранить</button>
+    <a href="{% url 'admin:storage_customuser_files' user.id %}" class="button">❌ Отмена</a>
+</form>
+{% endblock %}

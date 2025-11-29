@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div class="file-management">
+    <h1>{{ title }}</h1>
+
+    <div class="upload-section" style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px;">
+        <h2>📤 Загрузка нового файла</h2>
+        <form method="post" action="{% url 'admin:storage_customuser_upload' user.id %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="display: flex; gap: 10px; align-items: end;">
+                <div>
+                    <label><strong>Выберите файл:</strong></label><br>
+                    <input type="file" name="file" required style="margin-top: 5px;">
+                </div>
+                <div>
+                    <label><strong>Комментарий:</strong></label><br>
+                    <input type="text" name="comment" placeholder="Описание файла" style="margin-top: 5px; padding: 5px; width: 200px;">
+                </div>
+                <div>
+                    <button type="submit" class="button" style="margin-top: 5px;">📤 Загрузить</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="files-list">
+        <h2>📂 Файлы в хранилище ({{ files.count }})</h2>
+        
+        {% if files %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Имя файла</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Размер</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Дата загрузки</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Последнее скачивание</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Комментарий</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>{{ file.original_name }}</strong></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ file.size|filesizeformat }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ file.upload_date|date:"d.m.Y H:i" }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ file.last_download_date|date:"d.m.Y H:i"|default:"—" }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ file.comment|default:"—" }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <a href="{% url 'admin:storage_customuser_download_file' user.id file.id %}" class="button" style="padding: 5px 10px;">📥 Скачать</a>
+                            <a href="{% url 'admin:storage_customuser_rename_file' user.id file.id %}" class="button" style="padding: 5px 10px;">✏️ Переименовать</a>
+                            <a href="{% url 'admin:storage_customuser_delete_file' user.id file.id %}" class="button" style="padding: 5px 10px; background: #dc3545;" onclick="return confirm('Удалить файл \"{{ file.original_name }}\"?')">🗑️ Удалить</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="padding: 20px; text-align: center; color: #666;">В хранилище нет файлов</p>
+        {% endif %}
+    </div>
+    
+    <div class="back-link" style="margin-top: 30px;">
+        <a href="{% url 'admin:storage_customuser_changelist' %}" class="button">← Назад к списку пользователей</a>
+    </div>
+</div>
+{% endblock %}
