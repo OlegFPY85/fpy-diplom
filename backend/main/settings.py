@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    '193.227.240.10',
+    '83.166.246.18',
     '127.0.0.1', 
     'localhost'
 ]
@@ -185,8 +185,8 @@ REST_FRAMEWORK = {
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://localhost:5173', 
-    'https://193.227.240.10',
-    'http://193.227.240.10',
+    'https://83.166.246.18',
+    'http://83.166.246.18',
 ]
 
 CSRF_COOKIE_SECURE = False 
