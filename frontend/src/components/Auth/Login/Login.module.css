@@ -70,13 +70,13 @@
 
 .buttons-container {
   display: flex;
-  gap: 15px;
+  justify-content: center;
   margin-top: 25px;
 }
 
 .login-form button {
-  flex: 1;
-  padding: 12px;
+  min-width: 200px;
+  padding: 12px 30px;
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -85,30 +85,15 @@
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.login-form button[type="submit"] {
   background: linear-gradient(135deg, #FF6B6B, #EE5A52);
   color: white;
   box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
 }
 
-.login-form button[type="submit"]:hover {
+.login-form button:hover {
   background: linear-gradient(135deg, #FF5252, #E53935);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
-}
-
-.login-form button[type="button"] {
-  background: linear-gradient(135deg, #4ECDC4, #44A08D);
-  color: white;
-  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
-}
-
-.login-form button[type="button"]:hover {
-  background: linear-gradient(135deg, #26A69A, #00897B);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.5);
 }
 
 .error {
@@ -144,9 +129,9 @@
   }
  
   .login-form {
-  background: rgba(255, 255, 255, 0.75); 
-  backdrop-filter: blur(20px); 
-}
+    background: rgba(255, 255, 255, 0.75); 
+    backdrop-filter: blur(20px); 
+  }
 
   .buttons-container {
     flex-direction: column;
@@ -155,5 +140,6 @@
   
   .login-form button {
     width: 100%;
+    min-width: unset;
   }
 }

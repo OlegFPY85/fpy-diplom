@@ -22,16 +22,13 @@ export const Login = () => {
         }
     };
 
-    const handleRegister = () => {
-        navigate('/register');
-    };
-
     return (
         <form className={styles["login-form"]} onSubmit={handleSubmit}>
             <input type="text" placeholder="Username" onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
             <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-            <button type="submit">Login</button>
-            <button type="button" onClick={handleRegister}>Register</button>
+            <div className={styles["buttons-container"]}>
+                <button type="submit">Login</button>
+            </div>
             {error && <p className={styles.error}>{error}</p>}
         </form>
     );

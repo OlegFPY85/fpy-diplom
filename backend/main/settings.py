@@ -183,9 +183,7 @@ REST_FRAMEWORK = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://127.0.0.1:5173',
-    'http://localhost:5173', 
-    'https://83.166.246.18',
+    'http://localhost:3000', 
     'http://83.166.246.18',
 ]
 
@@ -194,8 +192,12 @@ CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False
 
 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ORIGINS = [
+    'http://83.166.246.18',
+    'http://localhost:3000',
+]
+
+CORS_ALLOWED_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -213,8 +215,11 @@ INTERNAL_IPS = [
     "127.0.0.1",
 ]
 
-SESSION_COOKIE_SECURE = False  
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = False
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/

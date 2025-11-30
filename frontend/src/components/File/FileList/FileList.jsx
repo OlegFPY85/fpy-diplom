@@ -1,272 +1,307 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import PropTypes from 'prop-types';
 import { 
     loadFiles, 
     deleteFileAction, 
-    updateCommentAction, 
-    updateFileNameAction,
-    viewFile,
-    downloadFile,
-    getShareLink
+    viewFile, 
+    downloadFile, 
+    getShareLink,
+    updateCommentAction,
+    updateFileNameAction
 } from '../../../redux/actions';
 import styles from './FileList.module.css';
-import { FaEdit, FaCopy, FaEye, FaDownload } from 'react-icons/fa';
 
-const FileList = ({ searchText, sortField, sortOrder }) => {
-    const dispatch = useDispatch();
-    const user = useSelector((state) => state.user);
-    const files = useSelector((state) => state.files);
+const FileList = ({ 
+    searchText = '', 
+    sortField = 'original_name', 
+    sortOrder = 'asc',
+    viewMode = 'all',
+    userFilter = '',
+    currentUser = null,
+    users = []
+}) => {
+    const [editingCommentId, setEditingCommentId] = useState(null);
+    const [editingFileNameId, setEditingFileNameId] = useState(null);
     const [newComment, setNewComment] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedFile, setSelectedFile] = useState(null);
     const [newFileName, setNewFileName] = useState('');
-    const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-    const [copyFileLink, setCopyFileLink] = useState(null);
-    const [notificationPosition, setNotificationPosition] = useState({ top: 0, left: 0 });
+    
+    const dispatch = useDispatch();
+    const files = useSelector((state) => state.files);
+    const token = localStorage.getItem('token');
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            dispatch(loadFiles(token));
-        }
-    }, [dispatch]);
+        dispatch(loadFiles(token));
+    }, [dispatch, token]);
 
-    const handleViewFile = (fileId) => {
-        const token = localStorage.getItem('token');
-        if (user && token) {
-            dispatch(viewFile(fileId, token));
-        }
+    // Функция для получения имени пользователя по ID
+    const getUsernameById = (userId) => {
+        const user = users.find(u => u.id === userId);
+        return user ? user.username : `User ${userId}`;
     };
 
-    const handleDownloadFile = (fileId) => {
-        const token = localStorage.getItem('token');
-        if (user && token) {
-            dispatch(downloadFile(fileId, token));
-        }
-    };
-
-    const handleGetShareLink = async (fileId, event) => {
-        const token = localStorage.getItem('token');
-        if (user && token) {
-            try {
-                await dispatch(getShareLink(fileId, token));
-            } catch (error) {
-                console.error('Ошибка получения ссылки:', error);
+    // Фильтрация и сортировка файлов
+    const processedFiles = files
+        .filter(file => {
+            // Фильтрация по режиму просмотра
+            if (viewMode === 'my') {
+                if (file.user_id !== currentUser?.id) return false;
             }
-        }
-    };
+            
+            // Фильтрация по выбранному пользователю
+            if (userFilter && file.user_id !== parseInt(userFilter)) {
+                return false;
+            }
+            
+            // Фильтрация по поисковому тексту
+            if (searchText && !file.original_name.toLowerCase().includes(searchText.toLowerCase())) {
+                return false;
+            }
+            
+            return true;
+        })
+        .sort((a, b) => {
+            let aValue = a[sortField];
+            let bValue = b[sortField];
+            
+            // Для сортировки по пользователю используем username
+            if (sortField === 'user') {
+                aValue = getUsernameById(a.user_id);
+                bValue = getUsernameById(b.user_id);
+            }
+            
+            if (sortOrder === 'asc') {
+                return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+            } else {
+                return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+            }
+        });
 
     const handleDelete = (fileId) => {
-        const token = localStorage.getItem('token');
-        if (user && token) {
+        if (window.confirm('Вы уверены, что хотите удалить этот файл?')) {
             dispatch(deleteFileAction(fileId, token));
         }
     };
 
-    const openEditModal = (file) => {
-        setSelectedFile(file);
-        setNewComment(file.comment);
-        setIsModalOpen(true);
+    const handleView = (fileId) => {
+        dispatch(viewFile(fileId, token));
     };
 
-    const handleSaveComment = () => {
-        const token = localStorage.getItem('token');
-        dispatch(updateCommentAction(selectedFile.id, newComment, token));
-        setIsModalOpen(false);
-        setSelectedFile(null);
-        setNewComment('');
+    const handleDownload = (fileId) => {
+        dispatch(downloadFile(fileId, token));
     };
 
-    const openRenameModal = (file) => {
-        setSelectedFile(file);
+    const handleShare = (fileId) => {
+        dispatch(getShareLink(fileId, token));
+    };
+
+    const startEditComment = (file) => {
+        setEditingCommentId(file.id);
+        setNewComment(file.comment || '');
+    };
+
+    const saveComment = (fileId) => {
+        dispatch(updateCommentAction(fileId, newComment, token))
+            .then(() => {
+                setEditingCommentId(null);
+                setNewComment('');
+            })
+            .catch(error => {
+                console.error('Ошибка обновления комментария:', error);
+            });
+    };
+
+    const startEditFileName = (file) => {
+        setEditingFileNameId(file.id);
         setNewFileName(file.original_name);
-        setIsRenameModalOpen(true);
     };
 
-    const handleSaveFileName = () => {
-        const token = localStorage.getItem('token');
-        dispatch(updateFileNameAction(selectedFile.id, newFileName, token));
-        setIsRenameModalOpen(false);
-        setSelectedFile(null);
+    const saveFileName = (fileId) => {
+        dispatch(updateFileNameAction(fileId, newFileName, token))
+            .then(() => {
+                setEditingFileNameId(null);
+                setNewFileName('');
+            })
+            .catch(error => {
+                console.error('Ошибка обновления имени файла:', error);
+            });
+    };
+
+    const cancelEdit = () => {
+        setEditingCommentId(null);
+        setEditingFileNameId(null);
+        setNewComment('');
         setNewFileName('');
     };
 
-    const showInfo = (message) => {
-        setCopyFileLink(message);
-        setTimeout(() => {
-            setCopyFileLink(null);
-        }, 3000);
-    };    
+    const formatFileSize = (bytes) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
 
-    const handleCopyLink = (link, event) => {
-        const textArea = document.createElement('textarea');
-        textArea.value = link;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        showInfo("Ссылка скопирована в буфер обмена!");
-
-        const buttonRect = event.target.getBoundingClientRect();
-        setNotificationPosition({
-            top: buttonRect.bottom + window.scrollY + 15,
-            left: buttonRect.left + window.scrollX - 130
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('ru-RU', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
         });
     };
 
-    const filteredFiles = searchText ? files.filter(file => {
-        return (
-            (file.user && file.user.includes(searchText)) ||
-            (file.original_name && file.original_name.includes(searchText)) ||
-            (file.upload_date && new Date(file.upload_date).toLocaleString().includes(searchText)) ||
-            (file.last_download_date && new Date(file.last_download_date).toLocaleString().includes(searchText)) ||
-            (file.comment && file.comment.includes(searchText))
-        );
-    }) : files;
-
-    const sortedFiles = [...filteredFiles].sort((a, b) => {
-        if (sortOrder === 'asc') {
-            return a[sortField] < b[sortField] ? -1 : 1;
-        } else {
-            return a[sortField] > b[sortField] ? -1 : 1;
-        }
-    });
-
     return (
-        <div className={styles["file-list"]}>
-            <h2>My Files</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Название</th>
-                        <th>Размер</th>
-                        <th>Дата загрузки</th>
-                        <th>Последняя дата скачивания</th>
-                        <th>Комментарий</th>
-                        <th>Действия</th>
-                        <th>Ссылка</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {sortedFiles.map((file) => (
-                        <tr key={file.id}>
-                            <td>
-                                <div className={styles['cell-content']}>
-                                    <span 
-                                        className={styles['file-name']}
-                                        onClick={() => handleViewFile(file.id)}
-                                        title="Просмотреть файл"
-                                    >
-                                        {file.original_name}
-                                    </span>
-                                    <button onClick={() => openRenameModal(file)} title="Переименовать">
-                                        <FaEdit />
-                                    </button>
-                                </div>
-                            </td>
-                            <td>{(file.size / 1024 / 1024).toFixed(2)} МБ</td>
-                            <td>{new Date(file.upload_date).toLocaleString()}</td>
-                            <td>{file.last_download_date ? new Date(file.last_download_date).toLocaleString() : '-'}</td>
-                            <td>
-                                <div className={styles['cell-content']}>
-                                    <span>{file.comment}</span>
-                                    <button onClick={() => openEditModal(file)} title="Редактировать комментарий">
-                                        <FaEdit />
-                                    </button>
-                                </div>
-                            </td>
-                            <td>
-                                <div className={styles['action-buttons']}>
-                                    <button 
-                                        onClick={() => handleViewFile(file.id)} 
-                                        title="Просмотреть файл"
-                                        className={styles['action-btn']}
-                                    >
-                                        <FaEye />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDownloadFile(file.id)} 
-                                        title="Скачать файл"
-                                        className={styles['action-btn']}
-                                    >
-                                        <FaDownload />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDelete(file.id)} 
-                                        title="Удалить файл"
-                                        className={styles['delete-btn']}
-                                    >
-                                        Удалить
-                                    </button>
-                                </div>
-                            </td>
-                            <td>
-                                <button 
-                                    onClick={(e) => handleGetShareLink(file.id, e)} 
-                                    title="Получить специальную ссылку"
-                                    className={styles['link-btn']}
-                                >
-                                    <FaCopy />
-                                </button>
-                            </td>
+        <div className={styles.fileList}>
+            <h2>
+                {viewMode === 'my' ? 'Мои файлы' : 'Все файлы'} 
+                {userFilter && ` (фильтр: ${getUsernameById(parseInt(userFilter))})`}
+            </h2>
+            
+            {processedFiles.length === 0 ? (
+                <p className={styles.noFiles}>Файлы не найдены</p>
+            ) : (
+                <table className={styles.table}>
+                    <thead>
+                        <tr>
+                            <th>Имя файла</th>
+                            {viewMode === 'all' && <th>Владелец</th>}
+                            <th>Размер</th>
+                            <th>Дата загрузки</th>
+                            <th>Комментарий</th>
+                            <th>Действия</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-            {copyFileLink && (
-                <div 
-                    className={`${styles['info-message']} ${copyFileLink ? styles.show : ''}`}
-                    style={{ top: `${notificationPosition.top}px`, left: `${notificationPosition.left}px` }}
-                >
-                    {copyFileLink}
-                </div>
-            )}
-            {isModalOpen && selectedFile && (
-                <div className={styles.modal}>
-                    <h2>Редактировать комментарий</h2>
-                    <p>Название: {selectedFile.original_name}</p>
-                    <p>Размер: {(selectedFile.size / 1024 / 1024).toFixed(2)} МБ</p>
-                    <p>Дата загрузки: {new Date(selectedFile.upload_date).toLocaleString()}</p>
-                    <p>Комментарий:</p>
-                    <input 
-                        type="text" 
-                        value={newComment} 
-                        onChange={(e) => setNewComment(e.target.value)} 
-                    />
-                    <div className={styles.modalActions}>
-                        <button onClick={handleSaveComment}>Сохранить</button>
-                        <button onClick={() => setIsModalOpen(false)}>Отмена</button>
-                    </div>
-                </div>
-            )}
-            {isRenameModalOpen && selectedFile && (
-                <div className={styles.modal}>
-                    <h2>Редактировать имя файла</h2>
-                    <p>Текущее имя: {selectedFile.original_name}</p>
-                    <input 
-                        type="text" 
-                        value={newFileName} 
-                        onChange={(e) => setNewFileName(e.target.value)} 
-                    />
-                    <p>Размер: {(selectedFile.size / 1024 / 1024).toFixed(2)} МБ</p>
-                    <p>Дата загрузки: {new Date(selectedFile.upload_date).toLocaleString()}</p>
-                    <p>Комментарий: {selectedFile.comment}</p>
-                    <div className={styles.modalActions}>
-                        <button onClick={handleSaveFileName}>Сохранить</button>
-                        <button onClick={() => setIsRenameModalOpen(false)}>Отмена</button>
-                    </div>
-                </div>
+                    </thead>
+                    <tbody>
+                        {processedFiles.map(file => (
+                            <tr key={file.id} className={styles.fileRow}>
+                                {/* Имя файла */}
+                                <td>
+                                    {editingFileNameId === file.id ? (
+                                        <div className={styles.editContainer}>
+                                            <input
+                                                type="text"
+                                                value={newFileName}
+                                                onChange={(e) => setNewFileName(e.target.value)}
+                                                className={styles.editInput}
+                                            />
+                                            <button 
+                                                onClick={() => saveFileName(file.id)}
+                                                className={styles.saveBtn}
+                                            >
+                                                ✓
+                                            </button>
+                                            <button 
+                                                onClick={cancelEdit}
+                                                className={styles.cancelBtn}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className={styles.fileName}>
+                                            <span 
+                                                className={styles.fileNameText}
+                                                onClick={() => startEditFileName(file)}
+                                                title="Нажмите для редактирования"
+                                            >
+                                                {file.original_name}
+                                            </span>
+                                        </div>
+                                    )}
+                                </td>
+                                
+                                {/* Владелец (только в режиме всех файлов) */}
+                                {viewMode === 'all' && (
+                                    <td>
+                                        <span className={
+                                            file.user_id === currentUser?.id ? 
+                                            styles.currentUser : ''
+                                        }>
+                                            {getUsernameById(file.user_id)}
+                                            {file.user_id === currentUser?.id && " (you)"}
+                                        </span>
+                                    </td>
+                                )}
+                                
+                                <td>{formatFileSize(file.size)}</td>
+                                <td>{formatDate(file.upload_date)}</td>
+                                
+                                {/* Комментарий */}
+                                <td>
+                                    {editingCommentId === file.id ? (
+                                        <div className={styles.editContainer}>
+                                            <input
+                                                type="text"
+                                                value={newComment}
+                                                onChange={(e) => setNewComment(e.target.value)}
+                                                className={styles.editInput}
+                                                placeholder="Введите комментарий"
+                                            />
+                                            <button 
+                                                onClick={() => saveComment(file.id)}
+                                                className={styles.saveBtn}
+                                            >
+                                                ✓
+                                            </button>
+                                            <button 
+                                                onClick={cancelEdit}
+                                                className={styles.cancelBtn}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div 
+                                            className={styles.comment}
+                                            onClick={() => startEditComment(file)}
+                                            title="Нажмите для редактирования"
+                                        >
+                                            {file.comment || <em>нет комментария</em>}
+                                        </div>
+                                    )}
+                                </td>
+                                
+                                {/* Действия */}
+                                <td>
+                                    <div className={styles.actions}>
+                                        <button 
+                                            onClick={() => handleView(file.id)}
+                                            className={styles.viewBtn}
+                                            title="Просмотр"
+                                        >
+                                            👁️
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDownload(file.id)}
+                                            className={styles.downloadBtn}
+                                            title="Скачать"
+                                        >
+                                            ⬇️
+                                        </button>
+                                        <button 
+                                            onClick={() => handleShare(file.id)}
+                                            className={styles.shareBtn}
+                                            title="Поделиться"
+                                        >
+                                            🔗
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(file.id)}
+                                            className={styles.deleteBtn}
+                                            title="Удалить"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             )}
         </div>
     );
-};
-
-FileList.propTypes = {
-    searchText: PropTypes.string.isRequired,
-    sortField: PropTypes.string.isRequired,
-    sortOrder: PropTypes.string.isRequired
 };
 
 export default FileList;

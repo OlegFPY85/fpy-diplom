@@ -143,3 +143,176 @@
     align-items: center;
     gap: 5px;
 }
+
+/* Добавьте эти стили в существующий FileList.module.css */
+
+.fileList h2 {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.noFiles {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table th {
+  background: #f8f9fa;
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.fileRow:hover {
+  background: #f8f9fa;
+}
+
+.fileName {
+  cursor: pointer;
+}
+
+.fileNameText {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+.fileNameText:hover {
+  color: #0056b3;
+}
+
+.currentUser {
+  font-weight: 600;
+  color: #28a745;
+}
+
+.comment {
+  cursor: pointer;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comment:hover {
+  background: #e9ecef;
+  border-radius: 3px;
+}
+
+.editContainer {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.editInput {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+.saveBtn, .cancelBtn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.saveBtn {
+  background: #28a745;
+  color: white;
+}
+
+.saveBtn:hover {
+  background: #218838;
+}
+
+.cancelBtn {
+  background: #dc3545;
+  color: white;
+}
+
+.cancelBtn:hover {
+  background: #c82333;
+}
+
+.actions {
+  display: flex;
+  gap: 5px;
+}
+
+.actions button {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.actions button:hover {
+  transform: scale(1.1);
+}
+
+.viewBtn {
+  background: #17a2b8;
+  color: white;
+}
+
+.downloadBtn {
+  background: #28a745;
+  color: white;
+}
+
+.shareBtn {
+  background: #6c757d;
+  color: white;
+}
+
+.deleteBtn {
+  background: #dc3545;
+  color: white;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .table {
+    font-size: 14px;
+  }
+  
+  .table th,
+  .table td {
+    padding: 8px 10px;
+  }
+  
+  .actions {
+    flex-direction: column;
+    gap: 3px;
+  }
+  
+  .actions button {
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+}

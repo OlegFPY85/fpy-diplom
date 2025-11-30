@@ -1,7 +1,7 @@
 import os
 import logging
 from django.utils import timezone
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404
 from rest_framework import viewsets, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -61,6 +61,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
 class FileViewSet(viewsets.ModelViewSet):
+    queryset = File.objects.all()
     serializer_class = FileSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
 
@@ -73,9 +74,9 @@ class FileViewSet(viewsets.ModelViewSet):
         user = self.request.user
     
         if user.is_staff:
-            return File.objects.filter(user=user)
+            return File.objects.all()  # Staff видит ВСЕ файлы
         else:
-            return File.objects.filter(user=user)
+            return File.objects.filter(user=user)  # Обычный пользователь видит только свои файлы
 
     def perform_create(self, serializer):
         """Создание файла с правильной обработкой"""
@@ -160,12 +161,13 @@ class FileViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Ошибка при обновлении комментария"}, 
                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=True, methods=['get'], permission_classes=[IsOwnerOrReadOnly])
-    def download(self, request, pk=None):
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly])
+    def download(self, request, pk=None):     
         """Скачивание файла"""
         logger.debug("Запрос на скачивание файла с ID %s", pk)
         try:
             file = self.get_object()
+            logger.debug("Найден файл: %s, пользователь: %s", file.original_name, request.user.username)
             
             if not file.file_path or not os.path.exists(file.file_path.path):
                 logger.error("Файл с ID %s не найден на диске", pk)
@@ -181,24 +183,26 @@ class FileViewSet(viewsets.ModelViewSet):
                 filename=file.original_name
             )
             
-            logger.info("Файл с ID %s успешно скачан", pk)
+            logger.info("Файл с ID %s успешно скачан пользователем %s", pk, request.user.username)
             return response
             
-        except File.DoesNotExist:
-            logger.error("Файл с ID %s не найден в базе данных", pk)
+        except Http404:
+            logger.error("Файл с ID %s не найден для пользователя %s", pk, request.user.username)
             return Response({"detail": "Файл не найден"}, 
                           status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error("Ошибка при скачивании файла с ID %s: %s", pk, str(e))
+            import traceback
+            logger.error(traceback.format_exc())
             return Response({"detail": "Ошибка при скачивании файла"}, 
                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @action(detail=True, methods=['get'], permission_classes=[IsOwnerOrReadOnly])
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly])
     def get_special_link(self, request, pk=None):
         """Получение специальной ссылки для файла"""
-        logger.debug("Запрос специальной ссылки для файла с ID %s", pk)
+        logger.debug("Запрос специальной ссылки для файла с ID %s пользователем %s", pk, request.user.username)
         try:
             file = self.get_object()
+            logger.debug("Найден файл: %s", file.original_name)
 
             if not file.special_link:
                 file.generate_special_link()
@@ -208,14 +212,20 @@ class FileViewSet(viewsets.ModelViewSet):
                 f'/api/files/download-by-link/{file.special_link}/'
             )
             
-            logger.info("Специальная ссылка для файла с ID %s получена", pk)
+            logger.info("Специальная ссылка для файла с ID %s получена пользователем %s", pk, request.user.username)
             return Response({
                 'special_link': special_link_url,
                 'file_name': file.original_name
             })
             
+        except Http404:
+            logger.error("Файл с ID %s не найден для пользователя %s", pk, request.user.username)
+            return Response({"detail": "Файл не найден"}, 
+                          status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error("Ошибка при получении специальной ссылки для файла с ID %s: %s", pk, str(e))
+            import traceback
+            logger.error(traceback.format_exc())
             return Response({"detail": "Ошибка при получении специальной ссылки"}, 
                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -299,6 +309,7 @@ class FileViewSet(viewsets.ModelViewSet):
             logger.error("Ошибка при просмотре файла с ID %s: %s", pk, str(e))
             return Response({"detail": "Ошибка при просмотре файла"}, 
                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(['GET'])
 def download_file_by_special_link(request, special_link):
     """Скачивание файла по специальной ссылке"""
@@ -314,11 +325,22 @@ def download_file_by_special_link(request, special_link):
         file_instance.last_download_date = timezone.now()
         file_instance.save(update_fields=['last_download_date'])
 
+        # Открываем файл в бинарном режиме
+        file_handle = open(file_path, 'rb')
+        
+        # Создаем FileResponse с правильными заголовками
         response = FileResponse(
-            open(file_path, 'rb'),
+            file_handle,
+            content_type='application/octet-stream',
             as_attachment=True,
             filename=file_instance.original_name
         )
+        
+        # Добавляем дополнительные заголовки для браузеров
+        response['Content-Length'] = os.path.getsize(file_path)
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
         
         logger.info("Файл по специальной ссылке '%s' успешно скачан", special_link)
         return response
@@ -330,7 +352,6 @@ def download_file_by_special_link(request, special_link):
         logger.error("Ошибка при скачивании файла по специальной ссылке '%s': %s", special_link, str(e))
         return Response({"detail": "Ошибка при скачивании файла"}, 
                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 @api_view(['POST'])
 def login_user(request):
     """Аутентификация пользователя"""
@@ -389,7 +410,5 @@ def register_user(request):
             'id': user.id
         }, status=status.HTTP_201_CREATED)
     
-
     logger.error("Ошибка валидации данных при регистрации: %s", serializer.errors)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
