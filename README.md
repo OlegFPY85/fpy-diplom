@@ -68,8 +68,8 @@ sudo -u postgres psql
 sql
 
 CREATE DATABASE mycloud;
-CREATE USER mycloud_user WITH PASSWORD 'your_secure_password';
-GRANT ALL PRIVILEGES ON DATABASE mycloud TO mycloud_user;
+CREATE USER postgres WITH PASSWORD 'your_secure_password';
+GRANT ALL PRIVILEGES ON DATABASE mycloud TO postgres;
 \q
 
 3.4. Настройка переменных окружения
