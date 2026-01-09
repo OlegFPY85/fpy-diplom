@@ -84,19 +84,19 @@ ini
 # Django Settings
 SECRET_KEY=your-very-secret-key-here
 DEBUG=False
-ALLOWED_HOSTS=your-domain.com,83.166.246.18,localhost,127.0.0.1
+ALLOWED_HOSTS=89.104.67.224,localhost,127.0.0.1
 
 # Database
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=mycloud
-DB_USER=mycloud_user
-DB_PASSWORD=your_secure_password
+DB_USER=postgres
+DB_PASSWORD=your_password
 DB_HOST=localhost
 DB_PORT=5432
 
 # Security
-CORS_ALLOWED_ORIGINS=https://your-domain.com,http://localhost:5173
-CSRF_TRUSTED_ORIGINS=https://your-domain.com
+CORS_ALLOWED_ORIGINS=localhost, hhtp://89.104.67.224, http://89.104.67.224:5173
+CSRF_TRUSTED_ORIGINS=https://89.104.67.224
 
 # Logging
 DJANGO_LOG_LEVEL=INFO
@@ -120,7 +120,7 @@ npm install
 Создайте файл .env в папке frontend:
 ini
 
-VITE_API_URL=http://83.166.246.18/api/
+VITE_API_URL=http://89.10467.224/api/
 
 4.3. Сборка проекта
 bash
@@ -154,6 +154,7 @@ ExecStart=/home/oleg/fpy-diplom/backend/venv/bin/gunicorn \
 [Install]
 WantedBy=multi-user.target
 
+
 Запустите службу:
 bash
 
@@ -185,7 +186,7 @@ nginx
 
 server {
     listen 80;
-    server_name 83.166.246.18;
+    server_name 89.104.67.224;
     
     # Корневая директория React приложения
     root /home/oleg/fpy-diplom/frontend/dist;
@@ -212,6 +213,11 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        send_timeout 60s;
     }
 
     # Админка Django
@@ -221,7 +227,12 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-    }
+   
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        send_timeout 60s;
+   }
 
     # Обработка React Router
     location / {
@@ -246,11 +257,11 @@ sudo certbot --nginx -d your-domain.com
 
 После успешной настройки приложение будет доступно по адресам:
 
-    Основное приложение: http://83.166.246.18
+    Основное приложение: http://89.104.67.224
 
-    Административная панель: http://83.166.246.18/admin
+    Административная панель: http://89.104.67.224/admin
 
-    API: http://83.166.246.18/api/
+    API: http://89.104.67.224/api/
 
 💻 Разработка
 Запуск в режиме разработки
