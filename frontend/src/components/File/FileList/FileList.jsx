@@ -33,7 +33,7 @@ const FileList = ({
         dispatch(loadFiles(token));
     }, [dispatch, token]);
 
-    // Функция для получения имени пользователя по ID
+    // Функция для получения имени пользователя (для заголовка фильтра)
     const getUsernameById = (userId) => {
         const user = users.find(u => u.id === userId);
         return user ? user.username : `User ${userId}`;
@@ -63,10 +63,10 @@ const FileList = ({
             let aValue = a[sortField];
             let bValue = b[sortField];
             
-            // Для сортировки по пользователю используем username
+            // Для сортировки по пользователю используем user_display
             if (sortField === 'user') {
-                aValue = getUsernameById(a.user_id);
-                bValue = getUsernameById(b.user_id);
+                aValue = a.user_display || a.user_name || `User ${a.user_id}`;
+                bValue = b.user_display || b.user_name || `User ${b.user_id}`;
             }
             
             if (sortOrder === 'asc') {
@@ -133,6 +133,7 @@ const FileList = ({
         setNewFileName('');
     };
 
+    // ВАЖНО: Эти функции должны быть объявлены!
     const formatFileSize = (bytes) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -150,6 +151,29 @@ const FileList = ({
             minute: '2-digit'
         });
     };
+
+    const handleCopyLink = async (fileId) => {
+    try {
+        const response = await fetch(`/api/files/${fileId}/get_special_link/`, {
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const link = data.special_link;
+            
+            // Копируем в буфер обмена
+            await navigator.clipboard.writeText(link);
+            alert('Ссылка скопирована в буфер обмена!');
+        }
+    } catch (err) {
+        console.error('Ошибка копирования:', err);
+        alert('Не удалось скопировать ссылку');
+    }
+};
 
     return (
         <div className={styles.fileList}>
@@ -218,7 +242,8 @@ const FileList = ({
                                             file.user_id === currentUser?.id ? 
                                             styles.currentUser : ''
                                         }>
-                                            {getUsernameById(file.user_id)}
+                                            {/* ИСПРАВЛЕННАЯ СТРОКА */}
+                                            {file.user_display || file.user_name || `User ${file.user_id}`}
                                             {file.user_id === currentUser?.id && " (you)"}
                                         </span>
                                     </td>

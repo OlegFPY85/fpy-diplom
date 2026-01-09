@@ -1,7 +1,8 @@
 import os
 import logging
 from django.utils import timezone
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
+from django.utils.encoding import smart_str, escape_uri_path
 from rest_framework import viewsets, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -14,6 +15,7 @@ from .serializers import UserSerializer, FileSerializer
 from django.contrib.auth import authenticate
 
 logger = logging.getLogger(__name__)
+
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -56,8 +58,23 @@ class UserViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         """Обновление пользователя с проверкой прав"""
         instance = self.get_object()
-        if not request.user.is_staff and request.user != instance:
-            raise PermissionDenied("Вы можете изменять только свой профиль")
+    
+        # Только администраторы могут менять is_staff
+        if 'is_staff' in request.data and not request.user.is_staff:
+            return Response(
+                {"detail": "Только администраторы могут изменять статус администратора"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    
+        # Администраторы не могут снять себе права
+        if (instance == request.user and 
+            'is_staff' in request.data and 
+            not request.data['is_staff']):
+            return Response(
+                {"detail": "Вы не можете снять себе права администратора"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    
         return super().update(request, *args, **kwargs)
 
 class FileViewSet(viewsets.ModelViewSet):
@@ -120,10 +137,16 @@ class FileViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'], permission_classes=[IsOwnerOrReadOnly])
     def rename(self, request, pk=None):
-        """Переименование файла"""
-        logger.debug("Запрос на переименование файла с ID %s", pk)
+        """Переименование файла (endpoint: /api/files/{id}/rename/)"""
+        logger.debug("Запрос на переименование файла с ID %s от пользователя %s", 
+                    pk, request.user.username)
         try:
             file = self.get_object()
+            
+            # Детальное логирование для отладки
+            logger.debug("Файл ID %s: имя='%s', владелец ID=%s, пользователь ID=%s",
+                        file.id, file.original_name, file.user_id, request.user.id)
+            
             new_name = request.data.get('new_name')
             
             if not new_name:
@@ -133,13 +156,22 @@ class FileViewSet(viewsets.ModelViewSet):
             file.original_name = new_name
             file.save(update_fields=['original_name'])
             
-            logger.info("Файл с ID %s переименован в '%s'", pk, new_name)
-            return Response(FileSerializer(file).data)
+            logger.info("Файл с ID %s переименован в '%s' пользователем %s", 
+                       pk, new_name, request.user.username)
+            return Response(self.get_serializer(file).data)
             
         except Exception as e:
             logger.error("Ошибка при переименовании файла с ID %s: %s", pk, str(e))
+            import traceback
+            logger.error(traceback.format_exc())
             return Response({"detail": "Ошибка при переименовании файла"}, 
                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['patch'], permission_classes=[IsOwnerOrReadOnly], url_path='rename_file')
+    def rename_file(self, request, pk=None):
+        """Алиас для rename для совместимости с фронтендом (endpoint: /api/files/{id}/rename_file/)"""
+        logger.debug("Запрос rename_file для файла с ID %s", pk)
+        return self.rename(request, pk)
 
     @action(detail=True, methods=['patch'], permission_classes=[IsOwnerOrReadOnly])
     def update_comment(self, request, pk=None):
@@ -196,6 +228,7 @@ class FileViewSet(viewsets.ModelViewSet):
             logger.error(traceback.format_exc())
             return Response({"detail": "Ошибка при скачивании файла"}, 
                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly])
     def get_special_link(self, request, pk=None):
         """Получение специальной ссылки для файла"""
@@ -241,74 +274,62 @@ class FileViewSet(viewsets.ModelViewSet):
                 token = Token.objects.get(key=token_key)
                 request.user = token.user
             except Token.DoesNotExist:
-                logger.warning("Неверный токен для просмотра файла")
                 return Response({"detail": "Неверный токен"}, status=status.HTTP_401_UNAUTHORIZED)
-    
+
         try:
             file = File.objects.get(id=pk)
         
             if not file.file_path or not os.path.exists(file.file_path.path):
-                logger.error("Файл с ID %s не найден на диске", pk)
-                return Response({"detail": "Файл не найден"}, 
-                              status=status.HTTP_404_NOT_FOUND)
+                return Response({"detail": "Файл не найден"}, status=status.HTTP_404_NOT_FOUND)
 
             file.last_download_date = timezone.now()
             file.save(update_fields=['last_download_date'])
 
-            content_type = 'application/octet-stream'
+            # Определяем content_type
             file_extension = os.path.splitext(file.original_name)[1].lower()
-
             content_types = {
-                '.pdf': 'application/pdf',
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.gif': 'image/gif',
-                '.txt': 'text/plain',
-                '.html': 'text/html',
-                '.json': 'application/json',
-                '.xml': 'application/xml',
-                '.svg': 'image/svg+xml',
-                '.webp': 'image/webp',
-                '.bmp': 'image/bmp',
-                '.ico': 'image/x-icon',
+                '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif', '.bmp': 'image/bmp', '.svg': 'image/svg+xml',
+                '.webp': 'image/webp', '.pdf': 'application/pdf',
+                '.txt': 'text/plain', '.html': 'text/html', '.htm': 'text/html',
+                '.css': 'text/css', '.js': 'application/javascript',
+                '.json': 'application/json', '.xml': 'application/xml',
+                '.mp3': 'audio/mpeg', '.mp4': 'video/mp4',
+                '.webm': 'video/webm', '.ogg': 'audio/ogg',
             }
-        
-            if file_extension in content_types:
-                content_type = content_types[file_extension]
-        
-            response = FileResponse(
-                open(file.file_path.path, 'rb'),
-                content_type=content_type
-            )
-
-            browser_types = [
-                'image/', 
-                'text/',  
-                'application/pdf',  
-                'application/json',
-                'application/xml', 
-            ]
-
-            should_open_in_browser = any(content_type.startswith(t) for t in browser_types)
-        
-            if should_open_in_browser:
-                response['Content-Disposition'] = f'inline; filename="{file.original_name}"'
-                logger.info("Файл с ID %s открывается в браузере (Content-Type: %s)", pk, content_type)
+            
+            content_type = content_types.get(file_extension, 'application/octet-stream')
+            
+            # Открываем файл
+            with open(file.file_path.path, 'rb') as f:
+                file_content = f.read()
+            
+            # Создаем HttpResponse с правильным кодированием
+            response = HttpResponse(file_content, content_type=content_type)
+            
+            # Определяем, показывать или скачивать
+            show_in_browser = any(content_type.startswith(t) for t in 
+                                 ['image/', 'text/', 'application/pdf', 'audio/', 'video/'])
+            
+            # Правильное кодирование для русских имен
+            filename_encoded = escape_uri_path(file.original_name)
+            
+            if show_in_browser:
+                # Для совместимости со всеми браузерами
+                response['Content-Disposition'] = f'inline; filename="{filename_encoded}"; filename*=UTF-8\'\'{file.original_name}'
+                logger.info("Файл отображается в браузере: %s", file.original_name)
             else:
-                response['Content-Disposition'] = f'attachment; filename="{file.original_name}"'
-                logger.info("Файл с ID %s отправлен на скачивание (Content-Type: %s)", pk, content_type)
-        
+                response['Content-Disposition'] = f'attachment; filename="{filename_encoded}"; filename*=UTF-8\'\'{file.original_name}'
+                logger.info("Файл отправлен на скачивание: %s", file.original_name)
+            
             return response
         
         except File.DoesNotExist:
-            logger.error("Файл с ID %s не найден в базе данных", pk)
-            return Response({"detail": "Файл не найден"}, 
-                          status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Файл не найден"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error("Ошибка при просмотре файла с ID %s: %s", pk, str(e))
-            return Response({"detail": "Ошибка при просмотре файла"}, 
-                          status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error("Ошибка при просмотре файла: %s", str(e))
+            return Response({"detail": "Ошибка при просмотре файла"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET'])
 def download_file_by_special_link(request, special_link):
@@ -352,6 +373,8 @@ def download_file_by_special_link(request, special_link):
         logger.error("Ошибка при скачивании файла по специальной ссылке '%s': %s", special_link, str(e))
         return Response({"detail": "Ошибка при скачивании файла"}, 
                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['POST'])
 def login_user(request):
     """Аутентификация пользователя"""
@@ -377,6 +400,7 @@ def login_user(request):
     
     logger.warning("Неудачная попытка входа для пользователя '%s'", username)
     return Response({'detail': 'Неверные учетные данные'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['POST'])
 def register_user(request):

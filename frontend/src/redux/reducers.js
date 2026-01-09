@@ -6,6 +6,12 @@ const initialState = {
 
 export const rootReducer = (state = initialState, action) => {
     switch (action.type) {
+        case 'LOGIN_SUCCESS':
+            return { ...state, user: action.payload }; 
+        case 'LOGOUT':
+            return { ...state, user: null };
+        case 'SET_USER':
+            return { ...state, user: action.payload };
         case 'SET_USER':
             return { ...state, user: action.payload };
         case 'SET_FILES':

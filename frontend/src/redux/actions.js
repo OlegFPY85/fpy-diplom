@@ -61,13 +61,61 @@ export const register = (userData) => async (dispatch) => {
 
 export const login = (credentials) => async (dispatch) => {
     try {
-        const response = await loginUser(credentials);
-        const token = response.data.token;
-        localStorage.setItem('token', token);
-        dispatch(setUser(response.data));
+        const response = await fetch('/api/auth/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(credentials)
+        });
+        
+        console.log("Login response status:", response.status);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Ошибка авторизации');
+        }
+        
+        const data = await response.json();
+        console.log("Login success data:", data);
+        
+        if (data.token) {
+            // Сохраняем токен
+            localStorage.setItem('token', data.token);
+            
+            // Получаем полные данные пользователя
+            const userResponse = await fetch('/api/users/me/', {
+                headers: {
+                    'Authorization': `Token ${data.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                console.log("User data from /me:", userData);
+                
+                // Сохраняем пользователя
+                localStorage.setItem('user', JSON.stringify(userData));
+                
+                dispatch({
+                    type: 'LOGIN_SUCCESS',
+                    payload: userData
+                });
+            } else {
+                throw new Error('Не удалось получить данные пользователя');
+            }
+        } else {
+            throw new Error('Токен не получен от сервера');
+        }
     } catch (error) {
         console.error("Login failed:", error);
-        throw "Login failed: " + error
+        
+        // Очищаем при ошибке
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        throw error;
     }
 };
 
@@ -136,21 +184,57 @@ export const loadUsers = (token) => async (dispatch) => {
 
 export const checkAuth = () => async (dispatch) => {
     const token = localStorage.getItem('token');
-    console.log("Token:", token);
-    if (token) {
-        try {
-            const userResponse = await fetchUserData(token);
-            console.log("User Data:", userResponse.data);
-            dispatch(setUser(userResponse.data));
-        } catch (error) {
-            console.error("Failed to fetch user data:", error);
-            dispatch(setUser(null));
+    console.log("checkAuth: Token from localStorage:", token ? "Exists" : "Missing");
+    
+    if (!token) {
+        console.log("checkAuth: No token, dispatching LOGOUT");
+        dispatch({ type: 'LOGOUT' });
+        // Очистите ошибочные данные из localStorage
+        localStorage.removeItem('user');
+        return;
+    }
+    
+    try {
+        console.log("checkAuth: Fetching user data...");
+        const response = await fetch('/api/users/me/', {
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log("checkAuth: Response status:", response.status);
+        
+        if (response.ok) {
+            const userData = await response.json();
+            console.log("checkAuth: User data received:", userData);
+            
+            // ВАЖНО: Сохраняем ТОЛЬКО при успешном ответе
+            localStorage.setItem('user', JSON.stringify(userData));
+            
+            dispatch({
+                type: 'LOGIN_SUCCESS',
+                payload: userData
+            });
+        } else {
+            console.log("checkAuth: Auth failed, status:", response.status);
+            
+            // Очищаем невалидные данные
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            dispatch({ type: 'LOGOUT' });
         }
-    } else {
-        dispatch(setUser(null));
+    } catch (error) {
+        console.error("checkAuth: Error:", error);
+        
+        // Очищаем при ошибке сети
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        dispatch({ type: 'LOGOUT' });
     }
 };
-
 export const viewFile = (fileId, token) => async () => {
     try {
         window.open(`${import.meta.env.VITE_API_URL}files/${fileId}/view/?token=${token}`, '_blank');

@@ -316,3 +316,17 @@
     font-size: 12px;
   }
 }
+
+.copyBtn {
+    background: #2196F3;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 2px;
+}
+
+.copyBtn:hover {
+    background: #1976D2;
+}
