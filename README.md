@@ -73,7 +73,7 @@ sudo -u postgres psql
 sql
 
 CREATE DATABASE mycloud;
-CREATE USER postgres WITH PASSWORD 'your_secure_password';
+ALTER USER postgres WITH PASSWORD 'your_password';
 GRANT ALL PRIVILEGES ON DATABASE mycloud TO postgres;
 \q
 
