@@ -41,6 +41,8 @@ sudo apt update
 sudo apt install python3-pip python3-dev libpq-dev postgresql postgresql-contrib nginx curl python3-venv nodejs npm git
 Создание пользователя 
 sudo adduser user
+Добавляем его в группу sudo:
+sudo usermod -aG sudo имя_пользователя
 Переключаемся на созданного пользователя
 su user
 Выходим из root
