@@ -91,7 +91,7 @@ ini
 # Django Settings
 SECRET_KEY=your-very-secret-key-here
 DEBUG=False
-ALLOWED_HOSTS=89.104.67.224,localhost,127.0.0.1
+ALLOWED_HOSTS=your_host,localhost,127.0.0.1
 
 # Database
 DB_ENGINE=django.db.backends.postgresql
@@ -102,12 +102,12 @@ DB_HOST=localhost
 DB_PORT=5432
 
 # Security
-CORS_ALLOWED_ORIGINS=localhost, hhtp://89.104.67.224, http://89.104.67.224:5173
-CSRF_TRUSTED_ORIGINS=https://89.104.67.224
+CORS_ALLOWED_ORIGINS=localhost, hhtp://your_host, http://your_host:5173
+CSRF_TRUSTED_ORIGINS=https://your_host
 
 # Logging
 DJANGO_LOG_LEVEL=INFO
-
+3.4.1 
 3.5. Применение миграций и создание суперпользователя
 bash
 
@@ -172,15 +172,14 @@ sudo systemctl status gunicorn
 2. Настройка прав доступа
 bash
 
-# Права для статических файлов
 sudo chmod -R 755 /home/oleg/fpy-diplom/backend/static/
 sudo chmod -R 755 /home/oleg/fpy-diplom/backend/media/
-
-# Права для сокета Gunicorn
 sudo chmod -R 755 /home/oleg/fpy-diplom/backend/
-
-# Владелец для веб-сервера
 sudo chown -R oleg:www-data /home/oleg/fpy-diplom/
+sudo chmod -R 755 /home/oleg/fpy-diplom/frontend/dist
+sudo chown -R oleg:www-data /home/oleg/fpy-diplom/frontend/dist
+sudo chmod 755 /home/oleg/fpy-diplom/backend/main
+sudo chown oleg:www-data /home/oleg/fpy-diplom/backend/main/project.sock
 
 3. Настройка Nginx
 
