@@ -89,9 +89,10 @@ nano .env
 ini
 
 # Django Settings
+# Django Settings
 SECRET_KEY=your-very-secret-key-here
 DEBUG=False
-ALLOWED_HOSTS=your_host,localhost,127.0.0.1
+ALLOWED_HOSTS=0.0.0.0,localhost,127.0.0.1
 
 # Database
 DB_ENGINE=django.db.backends.postgresql
@@ -102,11 +103,12 @@ DB_HOST=localhost
 DB_PORT=5432
 
 # Security
-CORS_ALLOWED_ORIGINS=localhost, hhtp://your_host, http://your_host:5173
-CSRF_TRUSTED_ORIGINS=https://your_host
+CORS_ALLOWED_ORIGINS=localhost, http://0.0.0.0, http://127.0.0.1
+CSRF_TRUSTED_ORIGINS=https://0.0.0.0
 
 # Logging
 DJANGO_LOG_LEVEL=INFO
+
 3.4.1 
 3.5. Применение миграций и создание суперпользователя
 bash
@@ -127,7 +129,8 @@ npm install
 Создайте файл .env в папке frontend:
 ini
 
-VITE_API_URL=http://89.10467.224/api/
+VITE_AVITE_API_URL=http://YOUR_IP_ADRES/api/
+VITE_WS_URL=ws://YOUR_IP_ADRES/ws/
 
 4.3. Сборка проекта
 bash
@@ -180,6 +183,7 @@ sudo chmod -R 755 /home/oleg/fpy-diplom/frontend/dist
 sudo chown -R oleg:www-data /home/oleg/fpy-diplom/frontend/dist
 sudo chmod 755 /home/oleg/fpy-diplom/backend/main
 sudo chown oleg:www-data /home/oleg/fpy-diplom/backend/main/project.sock
+sudo chmod 660 /home/oleg/fpy-diplom/backend/main/project.sock
 
 3. Настройка Nginx
 
@@ -190,15 +194,14 @@ sudo nano /etc/nginx/sites-available/mycloud
 
 nginx
 
-server {
+sserver {
     listen 80;
-    server_name 89.104.67.224;
+    server_name YOUR_IP_ADRES;
     
-    # Корневая директория React приложения
     root /home/oleg/fpy-diplom/frontend/dist;
     index index.html;
 
-    # Статические файлы Django
+    # Статика Django
     location /static/ {
         alias /home/oleg/fpy-diplom/backend/static/;
         expires 30d;
@@ -212,18 +215,45 @@ server {
         add_header Cache-Control "public";
     }
 
-    # API запросы к Django
+    # API запросы с CORS заголовками
     location /api/ {
         proxy_pass http://unix:/home/oleg/fpy-diplom/backend/main/project.sock;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-
+        
+        # CORS заголовки
+        add_header 'Access-Control-Allow-Origin' 'http://YOUR_IP_ADRES' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+        
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
         send_timeout 60s;
+    }
+
+    # CORS preflight запросы (OPTIONS)
+    location ~ ^/api/.*$ {
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' 'http://YOUR_IP_ADRES';
+            add_header 'Access-Control-Allow-Credentials' 'true';
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE, PATCH';
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization';
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain; charset=utf-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+        
+        proxy_pass http://unix:/home/oleg/fpy-diplom/backend/main/project.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     # Админка Django
@@ -233,18 +263,15 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-   
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-        send_timeout 60s;
-   }
+    }
 
     # Обработка React Router
     location / {
         try_files $uri $uri/ /index.html;
     }
 }
+
+
 
 Активируйте конфигурацию:
 bash
@@ -263,11 +290,11 @@ sudo certbot --nginx -d your-domain.com
 
 После успешной настройки приложение будет доступно по адресам:
 
-    Основное приложение: http://89.104.67.224
+    Основное приложение: http://YOUR_IP_ADRES
 
-    Административная панель: http://89.104.67.224/admin
+    Административная панель: http://YOUR_IP_ADRES/admin
 
-    API: http://89.104.67.224/api/
+    API: http://YOUR_IP_ADRES/api/
 
 💻 Разработка
 Запуск в режиме разработки
