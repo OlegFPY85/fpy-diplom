@@ -1,11 +1,13 @@
 .file-list {
-  margin: 0;
-  overflow-x: auto;
-}
-
-.file-list table {
-  width: 100%;
-  border-collapse: collapse;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;   
+    margin-bottom: 0;
+    padding: 20px 20px 0 20px;
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;  
+    min-height: 500px;
 }
 
 .file-list th, .file-list td {
@@ -166,6 +168,7 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 800px;
 }
 
 .table th {
@@ -329,4 +332,34 @@
 
 .copyBtn:hover {
     background: #1976D2;
+}
+
+/* Фикс для длинных таблиц */
+.fileList {
+  min-height: 400px;
+}
+.tableWrapper {
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 0;           
+  border-bottom: none;        
+}
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+.table thead {
+  position: sticky;
+  top: 0;
+  background: #f8f9fa;
+  z-index: 10;
+}
+.file-list > :last-child {
+  margin-bottom: 0;
 }

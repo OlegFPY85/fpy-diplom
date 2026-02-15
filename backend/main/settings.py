@@ -30,11 +30,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
-#    '89.104.67.224',
-#   '127.0.0.1', 
-#    'localhost'
-#]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') 
 
 # Application definition
 
@@ -181,21 +177,13 @@ REST_FRAMEWORK = {
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     # 'PAGE_SIZE': 3
 }
-CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1']
-#CSRF_TRUSTED_ORIGINS = [
-#    'http://localhost:3000', 
-#    'http://89.104.67.224',
-#]
-
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
 CSRF_COOKIE_SECURE = False 
 CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False
 
 
-CORS_ALLOW_ORIGINS = ['*']
-#    'http://89.104.67.224',
-#    'http://localhost:3000',
-#]
+CORS_ALLOW_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
 
 CORS_ALLOWED_CREDENTIALS = True
 
@@ -257,21 +245,6 @@ logger.info("Настройки Django загружены.")
 # Разрешаем все источники (для разработки/тестирования)
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-
-# Или явно указываем разрешенные источники (рекомендуется для продакшена)
-# CORS_ALLOWED_ORIGINS = [
-#     "http://79.174.78.52",
-#     "http://localhost:3000",
-#     "http://127.0.0.1:3000",
-#     "http://localhost:5173",
-#     "http://127.0.0.1:5173",
-# ]
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://79.174.78.52",
-    "http://localhost",
-    "http://127.0.0.1",
-]
 
 # Разрешаем все методы
 CORS_ALLOW_METHODS = [
