@@ -174,16 +174,9 @@ sudo systemctl status gunicorn
 
 2. Настройка прав доступа
 bash
-
-sudo chmod -R 755 /home/oleg/fpy-diplom/backend/static/
-sudo chmod -R 755 /home/oleg/fpy-diplom/backend/media/
-sudo chmod -R 755 /home/oleg/fpy-diplom/backend/
-sudo chown -R oleg:www-data /home/oleg/fpy-diplom/
-sudo chmod -R 755 /home/oleg/fpy-diplom/frontend/dist
-sudo chown -R oleg:www-data /home/oleg/fpy-diplom/frontend/dist
-sudo chmod 755 /home/oleg/fpy-diplom/backend/main
-sudo chown oleg:www-data /home/oleg/fpy-diplom/backend/main/project.sock
-sudo chmod 660 /home/oleg/fpy-diplom/backend/main/project.sock
+cd ~/fpy-diplom
+chmod +x setup_permissions.sh
+./setup_permissions.sh
 
 3. Настройка Nginx
 
