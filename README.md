@@ -34,8 +34,8 @@ markdown
 
 ## 🛠️ Установка и настройка
 
-### 1. Установка системных пакетов
 
+1. Установка системных пакетов
 ```bash
 sudo apt update
 sudo apt install python3-pip python3-dev libpq-dev postgresql postgresql-contrib nginx curl python3-venv nodejs npm git
@@ -89,10 +89,9 @@ nano .env
 ini
 
 # Django Settings
-# Django Settings
 SECRET_KEY=your-very-secret-key-here
 DEBUG=False
-ALLOWED_HOSTS=0.0.0.0,localhost,127.0.0.1
+ALLOWED_HOSTS=YOUR_IP_ADRES,localhost,127.0.0.1
 
 # Database
 DB_ENGINE=django.db.backends.postgresql
@@ -103,8 +102,8 @@ DB_HOST=localhost
 DB_PORT=5432
 
 # Security
-CORS_ALLOWED_ORIGINS=localhost, http://0.0.0.0, http://127.0.0.1
-CSRF_TRUSTED_ORIGINS=https://0.0.0.0
+CORS_ALLOWED_ORIGINS=localhost, http://YOUR_IP_ADRES, http://127.0.0.1
+CSRF_TRUSTED_ORIGINS=https://YOUR_IP_ADRES
 
 # Logging
 DJANGO_LOG_LEVEL=INFO
@@ -182,7 +181,7 @@ sudo nano /etc/nginx/sites-available/mycloud
 
 nginx
 
-sserver {
+server {
     listen 80;
     server_name YOUR_IP_ADRES;
     
