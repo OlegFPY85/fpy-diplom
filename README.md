@@ -129,8 +129,7 @@ npm install
 Создайте файл .env в папке frontend:
 ini
 
-VITE_AVITE_API_URL=http://YOUR_IP_ADRES/api/
-VITE_WS_URL=ws://YOUR_IP_ADRES/ws/
+VITE_API_URL=http://YOUR_IP_ADRES/api/
 
 4.3. Сборка проекта
 bash
@@ -172,13 +171,9 @@ sudo systemctl start gunicorn
 sudo systemctl enable gunicorn
 sudo systemctl status gunicorn
 
-2. Настройка прав доступа
-bash
-cd ~/fpy-diplom
-chmod +x setup_permissions.sh
-./setup_permissions.sh
 
-3. Настройка Nginx
+
+2. Настройка Nginx
 
 Создайте конфигурационный файл:
 bash
@@ -272,6 +267,13 @@ bash
 sudo ln -s /etc/nginx/sites-available/mycloud /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
+
+
+3. Настройка прав доступа
+bash
+cd ~/fpy-diplom
+chmod +x setup_permissions.sh
+./setup_permissions.sh
 
 4. Настройка SSL (опционально)
 bash
