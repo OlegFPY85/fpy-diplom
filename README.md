@@ -184,7 +184,11 @@ nginx
 server {
     listen 80;
     server_name YOUR_IP_ADRES;
-    
+
+    client_max_body_size 100M;
+    client_body_timeout 300s;
+    client_header_timeout 300s;
+
     root /home/oleg/fpy-diplom/frontend/dist;
     index index.html;
 
